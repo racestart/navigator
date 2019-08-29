@@ -1,0 +1,9 @@
+<launch>
+    <node pkg="flir" type="bfly_node" name="bfly_right" output="screen">
+        <param name="fps" value="60"/>
+        <param name="calibrationfile" value=""/>
+        <param name="format" value="rgb8"/>
+	<param name="timeout" value="1000"/>
+	<param name="camera_selected" value="1"/>
+    </node>
+</launch>

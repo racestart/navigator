@@ -1,5 +1,8 @@
 #include <iostream>
 #include <sstream>
+#include <vector>
+
+#include <pthread.h>
 
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
@@ -25,13 +28,13 @@
 
 using namespace std;
 using namespace cv;
-using namespace std;
 
 static volatile int running_ = 1;
 
 static void signal_handler(int) {
   running_ = 0;
   ros::shutdown();
+  ROS_INFO("get exit signal");
 }
 
 void parse_camera_info(const cv::Mat &camMat,
@@ -108,7 +111,7 @@ void getMatricesFromFile(const ros::NodeHandle &nh, sensor_msgs::CameraInfo &cam
  * @param timeout[out] Read value from the console timeout in ms
  */
 void ros_get_params(const ros::NodeHandle &private_nh, int &fps, int &mode, 
-                    std::string &format, int &timeout, int &camera_selected) {
+                    std::string &format, int &timeout) {
   if (private_nh.getParam("fps", fps)) {
     ROS_INFO("fps set to %d", fps);
   } else {
@@ -134,14 +137,7 @@ void ros_get_params(const ros::NodeHandle &private_nh, int &fps, int &mode,
   } else {
     timeout = 1000;
     ROS_INFO("No param received, defaulting timeout to %d ms", timeout);
-  }
-  
-  if (private_nh.getParam("camera_selected", camera_selected)) {
-    ROS_INFO("camera_selected set to %d ms", camera_selected);
-  } else {
-    camera_selected = 0;
-    ROS_INFO("No param received, defaulting camera to %d index", camera_selected);
-  }
+  }  
 }
 
 int PrintDeviceInfo(Spinnaker::GenApi::INodeMap & nodeMap) {
@@ -174,7 +170,6 @@ int PrintDeviceInfo(Spinnaker::GenApi::INodeMap & nodeMap) {
 int AcquireImages(Spinnaker::CameraPtr pCam, Spinnaker::GenApi::INodeMap& nodeMap, 
                   ros::Publisher& publisher, int fps) {
   int result = 0;
-  static int num_count = 0;    
   ROS_INFO("*** IMAGE ACQUISITION ***");
   
   try {
@@ -197,7 +192,7 @@ int AcquireImages(Spinnaker::CameraPtr pCam, Spinnaker::GenApi::INodeMap& nodeMa
     ptrAcquisitionMode->SetIntValue(acquisitionModeContinuous);
 
     ROS_INFO("Acquisition mode set to continuous...");
-    int64_t pixelFormat = pCam->PixelFormat.GetValue();
+    //int64_t pixelFormat = pCam->PixelFormat.GetValue();
 
     // Begin acquiring images
     pCam->BeginAcquisition();
@@ -215,12 +210,15 @@ int AcquireImages(Spinnaker::CameraPtr pCam, Spinnaker::GenApi::INodeMap& nodeMa
         Spinnaker::ImagePtr pResultImage = pCam->GetNextImage();
         try {
           if (pResultImage->IsIncomplete()) {
-            ROS_WARN("Image incomplete with image status %d ...", pResultImage->GetImageStatus());
+            ROS_WARN("Image incomplete with image status %d ...",
+                     pResultImage->GetImageStatus());
           } else {
-            //ROS_INFO("Grabbed image %d, width = %d, height = ", imageCnt, pResultImage->GetWidth(), pResultImage->GetHeight());
+            //ROS_INFO("Grabbed image %d, width = %d, height = ",
+            //         imageCnt, pResultImage->GetWidth(), pResultImage->GetHeight());
             // Deep copy image into image vector
             int cvFormat = CV_8UC3;
-            Spinnaker::ImagePtr convertedImage = pResultImage->Convert(Spinnaker::PixelFormat_RGB8 ,Spinnaker::HQ_LINEAR);
+            Spinnaker::ImagePtr convertedImage =
+                pResultImage->Convert(Spinnaker::PixelFormat_RGB8 ,Spinnaker::HQ_LINEAR);
             unsigned int XPadding = convertedImage->GetXPadding();
             unsigned int YPadding = convertedImage->GetYPadding();
             unsigned int rowsize = convertedImage->GetWidth();
@@ -267,7 +265,7 @@ int RunSingleCamera(Spinnaker::CameraPtr pCam, ros::Publisher& publisher, int fp
   
   try {
     // Retrieve TL device nodemap and print device information
-    Spinnaker::GenApi::INodeMap & nodeMapTLDevice = pCam->GetTLDeviceNodeMap();
+    //Spinnaker::GenApi::INodeMap & nodeMapTLDevice = pCam->GetTLDeviceNodeMap();
     //result = PrintDeviceInfo(nodeMapTLDevice);
     // Initialize camera
     pCam->Init();
@@ -290,15 +288,39 @@ int RunSingleCamera(Spinnaker::CameraPtr pCam, ros::Publisher& publisher, int fp
   return result;
 }
 
+typedef struct _thread_args_t {
+  ros::Publisher* publishers_camera_ptr;
+  Spinnaker::CameraPtr camera_ptr;
+  int fps;
+  unsigned int index;
+} thread_args_t;
+
+void* camera_thread(void* args) {
+  int index = ((thread_args_t *)args)->index;
+  int fps = ((thread_args_t *)args)->fps;
+  ros::Publisher* publishers_camera_ptr = ((thread_args_t *)args)->publishers_camera_ptr;
+  Spinnaker::CameraPtr camera_ptr = ((thread_args_t *)args)->camera_ptr;
+  int result = RunSingleCamera(camera_ptr, *publishers_camera_ptr, fps);
+  ROS_INFO("RunSingleCamera return %d", result);
+  pthread_exit(NULL);
+  ROS_INFO("Thread(%d) exit...", index);
+}
+
+void* control_thread(void *args) {
+  while (running_ && ros::ok()) {
+    sleep(1);
+  }
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "bfly_node");
   ros::NodeHandle n;
   ros::NodeHandle private_nh("~");
   
   signal(SIGTERM, signal_handler); //detect closing
-  int fps = 0, camera_mode = 0, timeout = 0, camera_selected = 0;
+  int fps = 0, camera_mode = 0, timeout = 0;
   std::string format;
-  ros_get_params(private_nh, fps, camera_mode, format, timeout, camera_selected);
+  ros_get_params(private_nh, fps, camera_mode, format, timeout);
   
   // Retrieve singleton reference to system object
   Spinnaker::SystemPtr system = Spinnaker::System::GetInstance();
@@ -335,18 +357,27 @@ int main(int argc, char **argv) {
   ros::Publisher publishers_cameras[nCameras];
   ros::Publisher camera_info_pub[nCameras];
   ros::NodeHandle node_handle;
+  std::vector<pthread_t> camera_threads(nCameras);
+  std::vector<thread_args_t> camera_threads_args(nCameras);
+  pthread_t control_thread_handle;
+
+  ROS_INFO("Publishing...");
   
   // advertise each camera topic
   for (unsigned int i = 0; i < nCameras; i++) {
+    ROS_INFO("Running camera: %d", i);
     std::string current_topic = "camera" + std::to_string(i) + "/image_raw";
     publishers_cameras[i] = node_handle.advertise<sensor_msgs::Image>(current_topic, 100);
+    camera_threads_args[i] = { &(publishers_cameras[i]), camList.GetByIndex(i), fps, i };
+    pthread_create(&camera_threads[i], NULL,
+                   camera_thread_fun, (void*)&(camera_threads_args[i]));
   }
-
-  ROS_INFO("Publishing...");
-  ROS_INFO("Capturing with \'%d\' BFLY cameras", nCameras);
   
-  ROS_INFO("Running camera: %d", camera_selected);
-  int result = RunSingleCamera(camList.GetByIndex(camera_selected), publishers_cameras[camera_selected], fps);
+  // wait all threads
+  for (unsigned int i = 0; i < nCameras; i++) {
+    pthread_join(camera_threads[i], NULL);
+  }
+  
   camList.Clear();			        // Clear camera list before releasing system
   system->ReleaseInstance();			// Release system
   

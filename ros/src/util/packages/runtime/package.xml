@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<package>
+  <name>runtime</name>
+  <version>1.0.0</version>
+  <description>The runtime package</description>
+  <maintainer email="fr1140m@gmail.com">gA4ss</maintainer>
+  <license>Apache 2</license>
+</package>

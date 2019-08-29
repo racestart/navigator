@@ -324,67 +324,66 @@ static void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     cvReleaseImage (&image_lrf);
 }
 
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "camera_lidar2d_offline_calib");
-    ros::NodeHandle n;
-    ros::NodeHandle private_nh("~");
-    std::string image_topic_name;
-    private_nh.param<std::string>("image_raw_topic", image_topic_name, "image_raw");
+int main(int argc, char **argv) {
+  ros::init(argc, argv, "camera_lidar2d_offline_calib");
+  ros::NodeHandle n;
+  ros::NodeHandle private_nh("~");
+  std::string image_topic_name;
+  private_nh.param<std::string>("image_raw_topic", image_topic_name, "image_raw");
 
-    /* Read parameter xml */
-    std::string param_yaml;
-    n.param<std::string>("/camera_lidar2d/param_yaml", param_yaml, STR(PARAM_YAML));
+  /* Read parameter xml */
+  std::string param_yaml;
+  n.param<std::string>("/camera_lidar2d/param_yaml", param_yaml, STR(PARAM_YAML));
+  
+  cv::FileStorage fs(param_yaml.c_str(), cv::FileStorage::READ);
+  if(!fs.isOpened()){
+    fprintf(stderr, "%s : cannot open file\n", param_yaml.c_str());
+    exit(EXIT_FAILURE);
+  }
 
-    cv::FileStorage fs(param_yaml.c_str(), cv::FileStorage::READ);
-    if(!fs.isOpened()){
-        fprintf(stderr, "%s : cannot open file\n", param_yaml.c_str());
-        exit(EXIT_FAILURE);
-    }
-
-    cv::FileNode tm = fs["checkerboard"];
-    cv::Mat m_intrinsic_opencv2to1;
-    cv::Mat m_dist_opencv2to1;
-    CV_Assert(tm.type() == cv::FileNode::MAP && tm.size() == 4);
-    pat_row = static_cast<int>(tm["pat_row"]);
-    pat_col = static_cast<int>(tm["pat_col"]);
-    chess_size =static_cast<double>(tm["chess_size"]);
-    paper_width_margin = static_cast<double>(tm["paper_width_margin"]);
-    pat_size = pat_col * pat_row;
-    tm = fs["window_lrf"];
-    CV_Assert(tm.type() == cv::FileNode::MAP && tm.size() == 4);
-    window_scan_width = static_cast<int>(tm["width"]);
-    window_scan_height = static_cast<int>(tm["height"]);
-    line_division_num = static_cast<int>(tm["line_division_num"]);
-    judge_margin = static_cast<double>(tm["judge_margin"]);
-    fs["intrinsic_matrix"] >> m_intrinsic_opencv2to1;
-    fs["distrotion_matrix"] >> m_dist_opencv2to1;
-    *m_intrinsic = m_intrinsic_opencv2to1;
-    *m_dist = m_dist_opencv2to1;
-
-    /* Create windows */
-    cvNamedWindow(WINDOW_NAME_SCAN, CV_WINDOW_AUTOSIZE);
-    cvNamedWindow(WINDOW_NAME_IMAGE, CV_WINDOW_AUTOSIZE);
-
-    /* Create bar in window*/
-    int default_vector_trackbar = 1000;
-    int default_rad_trackbar = 180;
-    cvCreateTrackbar ("vector_X", WINDOW_NAME_IMAGE, &default_vector_trackbar, 2000, vector_x_bar);
-    cvCreateTrackbar ("vector_Y", WINDOW_NAME_IMAGE, &default_vector_trackbar, 2000, vector_y_bar);
-    cvCreateTrackbar ("vector_Z", WINDOW_NAME_IMAGE, &default_vector_trackbar, 2000, vector_z_bar);
-    cvCreateTrackbar ("rad_X", WINDOW_NAME_IMAGE, &default_rad_trackbar, 360, rad_x_bar);
-    cvCreateTrackbar ("rad_Y", WINDOW_NAME_IMAGE, &default_rad_trackbar, 360, rad_y_bar);
-    cvCreateTrackbar ("rad_Z", WINDOW_NAME_IMAGE, &default_rad_trackbar, 360, rad_z_bar);
-
-    ros::Subscriber scan_sub = n.subscribe("scan", 1, scanCallback);
-    ros::Subscriber image_sub = n.subscribe(image_topic_name, 1, imageCallback);
-
-    ros::spin();
-
-    cvDestroyWindow(WINDOW_NAME_SCAN);
-    cvDestroyWindow(WINDOW_NAME_IMAGE);
-    release_common();
-    release_image_window();
-
-    return 0;
+  cv::FileNode tm = fs["checkerboard"];
+  cv::Mat m_intrinsic_opencv2to1;
+  cv::Mat m_dist_opencv2to1;
+  CV_Assert(tm.type() == cv::FileNode::MAP && tm.size() == 4);
+  pat_row = static_cast<int>(tm["pat_row"]);
+  pat_col = static_cast<int>(tm["pat_col"]);
+  chess_size =static_cast<double>(tm["chess_size"]);
+  paper_width_margin = static_cast<double>(tm["paper_width_margin"]);
+  pat_size = pat_col * pat_row;
+  tm = fs["window_lrf"];
+  CV_Assert(tm.type() == cv::FileNode::MAP && tm.size() == 4);
+  window_scan_width = static_cast<int>(tm["width"]);
+  window_scan_height = static_cast<int>(tm["height"]);
+  line_division_num = static_cast<int>(tm["line_division_num"]);
+  judge_margin = static_cast<double>(tm["judge_margin"]);
+  fs["intrinsic_matrix"] >> m_intrinsic_opencv2to1;
+  fs["distrotion_matrix"] >> m_dist_opencv2to1;
+  *m_intrinsic = m_intrinsic_opencv2to1;
+  *m_dist = m_dist_opencv2to1;
+  
+  /* Create windows */
+  cvNamedWindow(WINDOW_NAME_SCAN, CV_WINDOW_AUTOSIZE);
+  cvNamedWindow(WINDOW_NAME_IMAGE, CV_WINDOW_AUTOSIZE);
+  
+  /* Create bar in window*/
+  int default_vector_trackbar = 1000;
+  int default_rad_trackbar = 180;
+  cvCreateTrackbar ("vector_X", WINDOW_NAME_IMAGE, &default_vector_trackbar, 2000, vector_x_bar);
+  cvCreateTrackbar ("vector_Y", WINDOW_NAME_IMAGE, &default_vector_trackbar, 2000, vector_y_bar);
+  cvCreateTrackbar ("vector_Z", WINDOW_NAME_IMAGE, &default_vector_trackbar, 2000, vector_z_bar);
+  cvCreateTrackbar ("rad_X", WINDOW_NAME_IMAGE, &default_rad_trackbar, 360, rad_x_bar);
+  cvCreateTrackbar ("rad_Y", WINDOW_NAME_IMAGE, &default_rad_trackbar, 360, rad_y_bar);
+  cvCreateTrackbar ("rad_Z", WINDOW_NAME_IMAGE, &default_rad_trackbar, 360, rad_z_bar);
+  
+  ros::Subscriber scan_sub = n.subscribe("scan", 1, scanCallback);
+  ros::Subscriber image_sub = n.subscribe(image_topic_name, 1, imageCallback);
+  
+  ros::spin();
+  
+  cvDestroyWindow(WINDOW_NAME_SCAN);
+  cvDestroyWindow(WINDOW_NAME_IMAGE);
+  release_common();
+  release_image_window();
+  
+  return 0;
 }
