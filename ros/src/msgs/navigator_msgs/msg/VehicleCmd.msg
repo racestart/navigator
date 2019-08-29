@@ -1,0 +1,10 @@
+Header header
+navigator_msgs/SteerCmd steer_cmd
+navigator_msgs/AccelCmd accel_cmd
+navigator_msgs/BrakeCmd brake_cmd
+navigator_msgs/LampCmd lamp_cmd
+int32 gear
+int32 mode
+geometry_msgs/TwistStamped twist_cmd
+navigator_msgs/ControlCommand ctrl_cmd
+int32 emergency

@@ -1,0 +1,36 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(flir)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  std_msgs
+  message_generation
+  tf
+  image_transport
+  cv_bridge
+)
+
+FIND_PACKAGE(OpenCV REQUIRED)
+
+set (CUDA_USE_STATIC_CUDA_RUNTIME OFF)
+
+catkin_package(
+  LIBRARIES ${PROJECT_NAME}
+)
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  /usr/include
+  /usr/include/spinnaker
+  /usr/include/spinnaker/spinc
+)
+
+set(CMAKE_CXX_FLAGS "-std=c++11 -O2 -Wall ${CMAKE_CXX_FLAGS}")
+
+add_executable(bfly_node nodes/bfly/bfly.cpp)
+
+link_directories(${catkin_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS} /usr/lib)
+
+target_link_libraries(bfly_node
+  ${BOOST_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES} -lpthread -lSpinnaker
+)
