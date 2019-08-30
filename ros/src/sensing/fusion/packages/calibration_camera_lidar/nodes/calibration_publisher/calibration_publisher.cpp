@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
     }
     camera_id_str_ = name_space_str;
   }
-  
+
   ros::Subscriber image_sub;
   image_sub = n.subscribe(image_topic_name, 10, image_raw_cb);
   camera_info_pub = n.advertise<sensor_msgs::CameraInfo>(camera_info_name, 10, true);

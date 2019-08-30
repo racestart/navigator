@@ -46,36 +46,24 @@ void parse_camera_info(const cv::Mat &camMat,
   msg.height = imgSize.height;
   msg.width = imgSize.width;
   
-  for (int row = 0; row < 3; row++) {
-    for (int col = 0; col < 3; col++) {
+  for (int row = 0; row < 3; row++)
+    for (int col = 0; col < 3; col++)
       msg.K[row * 3 + col] = camMat.at<double>(row, col);
-    }
-  }
 
-  for (int row = 0; row < 3; row++) {
-    for (int col = 0; col < 4; col++) {
-      if (col == 3) {
+  for (int row = 0; row < 3; row++)
+    for (int col = 0; col < 4; col++)
+      if (col == 3)
         msg.P[row * 4 + col] = 0.0f;
-      } else {
+      else
         msg.P[row * 4 + col] = camMat.at<double>(row, col);
-      }
-    }
-  }
   
-  for (int row = 0; row < disCoeff.rows; row++) {
-    for (int col = 0; col < disCoeff.cols; col++) {
+  for (int row = 0; row < disCoeff.rows; row++)
+    for (int col = 0; col < disCoeff.cols; col++)
       msg.D.push_back(disCoeff.at<double>(row, col));
-    }
-  }
 }
 
-/*!
- * Reads and parses the Autoware calibration file format
- * @param nh ros node handle
- * @param camerainfo_msg CameraInfo message to fill
- */
-void getMatricesFromFile(const ros::NodeHandle &nh, sensor_msgs::CameraInfo &camerainfo_msg) {
-  //////////////////CAMERA INFO/////////////////////////////////////////
+bool get_matrices_from_file(const ros::NodeHandle &nh,
+                            sensor_msgs::CameraInfo &camerainfo_msg) {
   cv::Mat cameraExtrinsicMat;
   cv::Mat cameraMat;
   cv::Mat distCoeff;
@@ -87,19 +75,20 @@ void getMatricesFromFile(const ros::NodeHandle &nh, sensor_msgs::CameraInfo &cam
     ROS_INFO("> %s", filename.c_str());
   } else {
     ROS_INFO("No calibrationfile param was received");
-    return;
+    return false;
   }
   
   cv::FileStorage fs(filename, cv::FileStorage::READ);
   if (!fs.isOpened()) {
     ROS_INFO("Cannot open %s", filename.c_str());
-    return;
+    return false;
   } else {
     fs["CameraMat"] >> cameraMat;
     fs["DistCoeff"] >> distCoeff;
     fs["ImageSize"] >> imageSize;
   }
   parse_camera_info(cameraMat, distCoeff, imageSize, camerainfo_msg);
+  return true;
 }
 
 /*!
@@ -155,7 +144,8 @@ int PrintDeviceInfo(Spinnaker::GenApi::INodeMap & nodeMap) {
         Spinnaker::GenApi::CNodePtr pfeatureNode = *it;
         ROS_INFO("%s : ", pfeatureNode->GetName());
         Spinnaker::GenApi::CValuePtr pValue = (Spinnaker::GenApi::CValuePtr)pfeatureNode;
-        ROS_INFO(Spinnaker::GenApi::IsReadable(pValue) ? pValue->ToString() : "Node not readable");
+        ROS_INFO(Spinnaker::GenApi::IsReadable(pValue) ?
+                 pValue->ToString() : "Node not readable");
       }
     } else {
       ROS_WARN("Device control information not available.");
@@ -181,10 +171,11 @@ int AcquireImages(Spinnaker::CameraPtr pCam, Spinnaker::GenApi::INodeMap& nodeMa
       return -1;
     }
     
-    Spinnaker::GenApi::CEnumEntryPtr ptrAcquisitionModeContinuous = ptrAcquisitionMode->GetEntryByName("Continuous");
+    Spinnaker::GenApi::CEnumEntryPtr ptrAcquisitionModeContinuous =
+        ptrAcquisitionMode->GetEntryByName("Continuous");
     if (!Spinnaker::GenApi::IsAvailable(ptrAcquisitionModeContinuous) || 
         !Spinnaker::GenApi::IsReadable(ptrAcquisitionModeContinuous)) {
-      ROS_ERROR("Unable to set acquisition mode to continuous (entry 'continuous' retrieval). Aborting...");
+      ROS_ERROR("Unable to set acquisition mode to continuous. Aborting...");
       return -1;
     }
     
@@ -306,10 +297,43 @@ void* camera_thread(void* args) {
   ROS_INFO("Thread(%d) exit...", index);
 }
 
+typedef struct _control_thread_args_t {
+  Spinnaker::CameraList* camera_list_ptr;
+  int fps;
+} control_thread_args_t;
+
 void* control_thread(void *args) {
+  int fps = ((control_thread_args_t *)args)->fps;
+  Spinnaker::CameraList* camera_list_ptr = ((control_thread_args_t *)args)->camera_list_ptr;
+  unsigned int num_cameras = camera_list_ptr->GetSize();
+
+  ros::NodeHandle node_handle;
+  ros::Publisher publishers_cameras[num_cameras];
+  pthread_t camera_threads[num_cameras];
+  thread_args_t camera_threads_args[num_cameras];
+
+  ROS_INFO("Publishing...");
+  // advertise each camera topic
+  for (unsigned int i = 0; i < num_cameras; i++) {
+    ROS_INFO("Running camera: %d", i);
+    std::string current_topic = "camera" + std::to_string(i) + "/image_raw";
+    publishers_cameras[i] = node_handle.advertise<sensor_msgs::Image>(current_topic, 100);
+    camera_threads_args[i] = { &(publishers_cameras[i]), camera_list_ptr->GetByIndex(i),
+                               fps, i };
+    pthread_create(&camera_threads[i], NULL,
+                   camera_thread, (void*)&(camera_threads_args[i]));
+  }
+
   while (running_ && ros::ok()) {
     sleep(1);
   }
+  
+  // wait all threads
+  for (unsigned int i = 0; i < num_cameras; i++) {
+    pthread_join(camera_threads[i], NULL);
+  }
+  pthread_exit(NULL);
+  ROS_INFO("Control Thread exit...");
 }
 
 int main(int argc, char **argv) {
@@ -334,15 +358,15 @@ int main(int argc, char **argv) {
            spinnakerLibraryVersion.build);
   
   // Retrieve list of cameras from the system
-  Spinnaker::CameraList camList = system->GetCameras();
-  unsigned int nCameras = camList.GetSize();
+  Spinnaker::CameraList camera_list = system->GetCameras();
+  unsigned int num_cameras = camera_list.GetSize();
   
-  ROS_INFO("Number of cameras detected: %d", nCameras);
+  ROS_INFO("Number of cameras detected: %d", num_cameras);
   
   // Finish if there are no cameras
-  if (nCameras == 0) {
+  if (num_cameras == 0) {
     // Clear camera list before releasing system
-    camList.Clear();
+    camera_list.Clear();
 
     // Release system
     system->ReleaseInstance();
@@ -352,33 +376,18 @@ int main(int argc, char **argv) {
 
   // calibration data
   sensor_msgs::CameraInfo camerainfo_msg;
-  getMatricesFromFile(private_nh, camerainfo_msg);
+  if (get_matrices_from_file(private_nh, camerainfo_msg)) {
+    ros::Publisher camera_info_pub[num_cameras];
+  }
   
-  ros::Publisher publishers_cameras[nCameras];
-  ros::Publisher camera_info_pub[nCameras];
-  ros::NodeHandle node_handle;
-  std::vector<pthread_t> camera_threads(nCameras);
-  std::vector<thread_args_t> camera_threads_args(nCameras);
-  pthread_t control_thread_handle;
 
-  ROS_INFO("Publishing...");
+  control_thread_args_t thread_args = { &camera_list, fps };
+  pthread_t control_thread_handle;
+  pthread_create(&control_thread_handle, NULL,
+                 control_thread, (void*)&(thread_args));
+  pthread_join(control_thread_handle, NULL);
   
-  // advertise each camera topic
-  for (unsigned int i = 0; i < nCameras; i++) {
-    ROS_INFO("Running camera: %d", i);
-    std::string current_topic = "camera" + std::to_string(i) + "/image_raw";
-    publishers_cameras[i] = node_handle.advertise<sensor_msgs::Image>(current_topic, 100);
-    camera_threads_args[i] = { &(publishers_cameras[i]), camList.GetByIndex(i), fps, i };
-    pthread_create(&camera_threads[i], NULL,
-                   camera_thread_fun, (void*)&(camera_threads_args[i]));
-  }
-  
-  // wait all threads
-  for (unsigned int i = 0; i < nCameras; i++) {
-    pthread_join(camera_threads[i], NULL);
-  }
-  
-  camList.Clear();			        // Clear camera list before releasing system
+  camera_list.Clear();			        // Clear camera list before releasing system
   system->ReleaseInstance();			// Release system
   
   ROS_INFO("Camera node closed correctly");

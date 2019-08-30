@@ -7,7 +7,7 @@ The data is read from an Autoware compatible calibration file.
 
 * `sensor_msgs/CameraInfo`, default topic name `/NAMESPACE/camera_info`.
 
-* `autoware_msgs/projection_matrix`, default topic name `/NAMESPACE/camera_info`
+* `navigator_msgs/projection_matrix`, default topic name `/NAMESPACE/camera_info`
 
 `NAMESPACE` if any.
 
@@ -28,4 +28,3 @@ The data is read from an Autoware compatible calibration file.
 |`image_topic_src`         | String|Image source topic to synchronize CameraInfo          | `/image_raw`  |
 |`camera_info_topic`       | String|Camera info topic name to publish intrinsics          | `/camera_info`|
 |`projection_matrix_topic` | String|Topic name on which to publish Extrinsics             | `/projection_matrix`|
-
