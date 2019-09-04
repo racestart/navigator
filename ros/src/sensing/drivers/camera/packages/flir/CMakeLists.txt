@@ -27,10 +27,10 @@ include_directories(
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -O2 -Wall ${CMAKE_CXX_FLAGS}")
 
-add_executable(bfly_node nodes/bfly/bfly.cpp)
+add_executable(spinnaker nodes/spinnaker/spinnaker.cpp)
 
 link_directories(${catkin_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS} /usr/lib)
 
-target_link_libraries(bfly_node
+target_link_libraries(spinnaker
   ${BOOST_LIBRARIES} ${OpenCV_LIBS} ${catkin_LIBRARIES} -lpthread -lSpinnaker
 )
