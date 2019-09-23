@@ -561,7 +561,8 @@ TEST(System, random_data_dense)
   verifyScanDense(cloud, 8, false);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   testing::InitGoogleTest(&argc, argv);
 
   // Initialize ROS

@@ -3,15 +3,16 @@
     <name>calibration_camera_lidar</name>
     <version>1.10.0</version>
     <description>The calibration_camera_lidar package</description>
-    <maintainer email="fr1140m@gmail.com">gA4ss</maintainer>
+    <maintainer email="syoshida@axe.bz">Syohei YOSHIDA</maintainer>
+    <maintainer email="abrahammonrroy@yahoo.com">amc</maintainer>
     <license>Apache 2</license>
     <buildtool_depend>catkin</buildtool_depend>
-    <buildtool_depend>navigator_build_flags</buildtool_depend>
+    <buildtool_depend>autoware_build_flags</buildtool_depend>
     <build_depend>std_msgs</build_depend>
     <build_depend>glviewer</build_depend>
     <build_depend>libnlopt-dev</build_depend>
     <build_depend>rosinterface</build_depend>
-    <build_depend>navigator_msgs</build_depend>
+    <build_depend>autoware_msgs</build_depend>
     <build_depend>qtbase5-dev</build_depend>
     <build_depend>libqt5-opengl-dev</build_depend>
     <build_depend>libxml2</build_depend>
@@ -28,7 +29,7 @@
     <run_depend>std_msgs</run_depend>
     <run_depend>glviewer</run_depend>
     <run_depend>nlopt</run_depend>
-    <run_depend>navigator_msgs</run_depend>
+    <run_depend>autoware_msgs</run_depend>
     <run_depend>libqt5-core</run_depend>
     <run_depend>libqt5-widgets</run_depend>
     <run_depend>libqt5-opengl</run_depend>

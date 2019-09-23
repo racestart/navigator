@@ -3,7 +3,7 @@ project(rosinterface)
 
 include(FindPkgConfig)
 
-find_package(navigator_build_flags REQUIRED)
+find_package(autoware_build_flags REQUIRED)
 find_package(catkin REQUIRED
         roscpp
         tf

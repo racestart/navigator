@@ -6,12 +6,13 @@
 namespace velodyne_laserscan
 {
 
-class LaserScanNodelet: public nodelet::Nodelet {
- public:
+class LaserScanNodelet: public nodelet::Nodelet
+{
+public:
   LaserScanNodelet() {}
   ~LaserScanNodelet() {}
-  
- private:
+
+private:
   virtual void onInit() {
     node_.reset(new VelodyneLaserScan(getNodeHandle(), getPrivateNodeHandle()));
   }

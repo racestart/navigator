@@ -2,7 +2,7 @@
 <!-- start velodyne_driver/DriverNodelet in a nodelet manager -->
 
 <launch>
-  
+
   <arg name="device_ip" default="" />
   <arg name="frame_id" default="velodyne" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
@@ -14,7 +14,7 @@
   <arg name="repeat_delay" default="0.0" />
   <arg name="rpm" default="600.0" />
   <arg name="cut_angle" default="-0.01" />
-  
+
   <!-- start nodelet manager -->
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" />
 

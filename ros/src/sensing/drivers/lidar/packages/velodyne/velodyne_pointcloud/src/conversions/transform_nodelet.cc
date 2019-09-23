@@ -18,23 +18,26 @@
 
 #include "transform.h"
 
-namespace velodyne_pointcloud {
-class TransformNodelet: public nodelet::Nodelet {
- public:
+namespace velodyne_pointcloud
+{
+  class TransformNodelet: public nodelet::Nodelet
+  {
+  public:
 
-  TransformNodelet() {}
-  ~TransformNodelet() {}
+    TransformNodelet() {}
+    ~TransformNodelet() {}
 
- private:
+  private:
 
-  virtual void onInit();
-  boost::shared_ptr<Transform> tf_;
-};
+    virtual void onInit();
+    boost::shared_ptr<Transform> tf_;
+  };
 
-/** @brief Nodelet initialization. */
-void TransformNodelet::onInit() {
-  tf_.reset(new Transform(getNodeHandle(), getPrivateNodeHandle()));
-}
+  /** @brief Nodelet initialization. */
+  void TransformNodelet::onInit()
+  {
+    tf_.reset(new Transform(getNodeHandle(), getPrivateNodeHandle()));
+  }
 
 } // namespace velodyne_pointcloud
 

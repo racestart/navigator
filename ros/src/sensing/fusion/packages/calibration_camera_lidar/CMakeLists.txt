@@ -5,9 +5,9 @@ set(ROS_VERSION $ENV{ROS_DISTRO})
 include(FindPkgConfig)
 include(FindLibXml2 REQUIRED)
 
-find_package(navigator_build_flags REQUIRED)
+find_package(autoware_build_flags REQUIRED)
 
-find_package(navigator_msgs REQUIRED)
+find_package(autoware_msgs REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
         roscpp
         rosconsole
@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
         cv_bridge
         pcl_ros
         image_transport
-        navigator_msgs
+        autoware_msgs
         )
 
 find_package(OpenCV REQUIRED)
@@ -46,7 +46,7 @@ catkin_package(
         cv_bridge
         pcl_ros
         image_transport
-        navigator_msgs
+        autoware_msgs
 )
 
 set(CMAKE_CXX_FLAGS "-O2 -Wall -g ${CMAKE_CXX_FLAGS}")

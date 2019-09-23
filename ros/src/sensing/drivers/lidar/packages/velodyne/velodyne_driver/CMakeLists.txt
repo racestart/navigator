@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 2.8.3)
 project(velodyne_driver)
 
 set(${PROJECT_NAME}_CATKIN_DEPS 
-  diagnostic_updater
-  dynamic_reconfigure
-  nodelet
-  roscpp
-  tf
-  velodyne_msgs)
+    diagnostic_updater
+    dynamic_reconfigure
+    nodelet
+    roscpp
+    tf
+    velodyne_msgs)
 
 
 find_package(velodyne_msgs REQUIRED)
@@ -26,28 +26,28 @@ generate_dynamic_reconfigure_options(cfg/VelodyneNode.cfg)
 
 # objects needed by other ROS packages that depend on this one
 catkin_package(CATKIN_DEPENDS ${${PROJECT_NAME}_CATKIN_DEPS}
-  INCLUDE_DIRS include
-  LIBRARIES velodyne_input)
+               INCLUDE_DIRS include
+               LIBRARIES velodyne_input)
 
 # compile the driver and input library
 add_subdirectory(src/lib)
 add_subdirectory(src/driver)
 
 install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 install(FILES nodelet_velodyne.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 install(PROGRAMS src/vdump
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 if (CATKIN_ENABLE_TESTING)
-  
+
   # these dependencies are only needed for unit testing
   find_package(roslaunch REQUIRED)
   find_package(rostest REQUIRED)
-  
+
   # Download packet capture (PCAP) files containing test data.
   # Store them in devel-space, so rostest can easily find them.
   catkin_download_test_data(

@@ -1,12 +1,14 @@
 <package>
 
   <name>velodyne_pointcloud</name>
-  <version>1.0.0</version>
+  <version>1.10.0</version>
   <description>
     Point cloud conversions for Velodyne 3D LIDARs.
   </description>
-  <maintainer email="fr1140m@gmail.com">gA4ss</maintainer>
-  <author>gA4ss</author>
+  <maintainer email="jwhitley@autonomoustuff.com">Josh Whitley</maintainer>
+  <author>Jack O'Quin</author>
+  <author>Piyush Khandelwal</author>
+  <author>Jesse Vera</author>
   <license>BSD</license>
   <url type="website">http://ros.org/wiki/velodyne_pointcloud</url>
   <url type="repository">https://github.com/ros-drivers/velodyne</url>

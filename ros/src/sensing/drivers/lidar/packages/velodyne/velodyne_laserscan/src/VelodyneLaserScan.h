@@ -13,19 +13,20 @@
 
 namespace velodyne_laserscan {
 
-class VelodyneLaserScan {
+class VelodyneLaserScan
+{
 public:
   VelodyneLaserScan(ros::NodeHandle &nh, ros::NodeHandle &nh_priv);
-  
+
 private:
   boost::mutex connect_mutex_;
   void connectCb();
   void recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
-  
+
   ros::NodeHandle nh_;
   ros::Subscriber sub_;
   ros::Publisher pub_;
-  
+
   VelodyneLaserScanConfig cfg_;
   dynamic_reconfigure::Server<VelodyneLaserScanConfig> srv_;
   void reconfig(VelodyneLaserScanConfig& config, uint32_t level);

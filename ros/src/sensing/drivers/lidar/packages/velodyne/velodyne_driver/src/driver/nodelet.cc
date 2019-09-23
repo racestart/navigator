@@ -20,13 +20,15 @@
 
 #include "driver.h"
 
-namespace velodyne_driver {
+namespace velodyne_driver
+{
 
-class DriverNodelet: public nodelet::Nodelet {
- public:
-  
+class DriverNodelet: public nodelet::Nodelet
+{
+public:
+
   DriverNodelet():
-      running_(false)
+    running_(false)
   {}
 
   ~DriverNodelet()
