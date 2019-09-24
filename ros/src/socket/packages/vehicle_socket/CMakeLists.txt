@@ -6,11 +6,13 @@ find_package(autoware_build_flags REQUIRED)
 
 find_package(autoware_msgs REQUIRED)
 
+find_package(tablet_socket_msgs REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   autoware_msgs
   autoware_can_msgs
+  tablet_socket_msgs
 )
 
 set(CMAKE_CXX_FLAGS "-O2 -Wall ${CMAKE_CXX_FLAGS}")
@@ -20,6 +22,7 @@ catkin_package(CATKIN_DEPENDS
   std_msgs
   autoware_can_msgs
   autoware_msgs
+  tablet_socket_msgs
 )
 
 include_directories(

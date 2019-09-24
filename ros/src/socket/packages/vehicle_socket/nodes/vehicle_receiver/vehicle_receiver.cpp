@@ -15,6 +15,7 @@
  */
 
 #include <ros/ros.h>
+#include <tablet_socket_msgs/mode_info.h>
 #include "autoware_can_msgs/CANInfo.h"
 
 #include <netinet/in.h>
@@ -40,6 +41,7 @@
 #define CAN_KEY_SHIFT (7)
 
 static ros::Publisher can_pub;
+static ros::Publisher mode_pub;
 static int mode;
 
 static bool parseCanValue(const std::string &can_data, autoware_can_msgs::CANInfo &msg)
@@ -160,6 +162,12 @@ static void *getCanValue(void *arg)
   can_msg.header.stamp = ros::Time::now();
   can_pub.publish(can_msg);
 
+  tablet_socket_msgs::mode_info mode_msg;
+  mode_msg.header.frame_id = "/mode";
+  mode_msg.header.stamp = ros::Time::now();
+  mode_msg.mode = mode;
+  mode_pub.publish(mode_msg);
+
   return nullptr;
 }
 
@@ -240,6 +248,7 @@ int main(int argc, char **argv)
   std::cout << "vehicle receiver" << std::endl;
 
   can_pub = nh.advertise<autoware_can_msgs::CANInfo>("can_info", 100);
+  mode_pub = nh.advertise<tablet_socket_msgs::mode_info>("mode_info", 100);
 
   pthread_t th;
   int ret = pthread_create(&th, nullptr, receiverCaller, nullptr);
