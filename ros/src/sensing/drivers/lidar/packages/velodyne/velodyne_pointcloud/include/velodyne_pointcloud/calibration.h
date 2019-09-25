@@ -16,7 +16,7 @@
 #include <string>
 
 namespace velodyne_pointcloud {
-
+  
   /** \brief correction values for a single laser
    *
    * Correction values for a single laser (as provided by db.xml from
@@ -24,10 +24,10 @@ namespace velodyne_pointcloud {
    *
    * http://velodynelidar.com/lidar/products/manual/63-HDL64E%20S2%20Manual_Rev%20D_2011_web.pdf
    */
-
+  
   /** \brief Correction information for a single laser. */
   struct LaserCorrection {
-
+    
     /** parameters in db.xml */
     float rot_correction;
     float vert_correction;
@@ -53,8 +53,8 @@ namespace velodyne_pointcloud {
 
   /** \brief Calibration information for the entire device. */
   class Calibration {
-
-  public:
+    
+   public:
 
     std::map<int, LaserCorrection> laser_corrections;
     int num_lasers;
@@ -64,7 +64,7 @@ namespace velodyne_pointcloud {
   public:
 
     Calibration(bool info=true):
-      initialized(false), ros_info(info) {}
+    initialized(false), ros_info(info) {}
     Calibration(const std::string& calibration_file,
                 bool info=true):
       ros_info(info)
