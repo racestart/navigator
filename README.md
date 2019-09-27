@@ -51,11 +51,85 @@ $\quad$此包负责启动关于_velodyne_激光雷达的相关功能。
 ## lidar_localizer
 $\quad$此包的负责
 
+## autoware_connector
+$\quad$此包负责autoware与系统相链接。
+
+### can_status_translator
+
+> roslaunch autoware\_connector vel\_pose\_connect.launch
+
+$\quad$此节点负责接收**CAN**总线的信息并转换为车辆状态信息并进行发布。发布后的信息将提供给它运算节点使用。**CAN**总线
+信息从`/can_info`得到，并且订阅了`/vehicle_status`话题，此话题也是当前节点自己发布的。而它发布`/can_veloctiy`、`/linear_velocity_viz`、`/vehicle_status`三个话题。`/linear_velocity_viz`话题是单纯的当前车速度。
+$\quad$核心功能是发布`VehicleStatus`数据结构。将`autoware_can_msgs` $\rightarrow$ `VehicleStatus`。这里也会
+判断当前是否是倒档位，如果是倒档则将速度设置为负数。
+$\quad$另外一个核心功能是发布当前车从CAN总线读取出来的速度，并经过转换。在_x_轴上的速度从CAN总线读取出来时是**公里/小时**，而在此要转换成**米/秒**。另外还要根据当前的角度与车速计算出在_z_轴上的角速度。
+
+$\quad$以下是转换代码，函数接收两个参数一个是当前的速度一个是当前的角度。返回一个当前的角速度。
+
+```c++
+// rad/s
+double convertSteeringAngleToAngularVelocity(const double cur_vel_mps, const double cur_angle_deg) {
+  return is_stored ? tan(deg2rad(getCurrentTireAngle(cur_angle_deg))) * cur_vel_mps / wheel_base : 0;
+}
+
+// steering [degree] -> tire [degree]
+double getCurrentTireAngle(const double angle_deg) {
+  return is_stored ? angle_deg * getMaximumTireAngle() / maximum_steering_angle : 0;
+}
+
+// degree
+double getMaximumTireAngle() {
+  return is_stored ? rad2deg(asin(wheel_base / minimum_turning_radius)) : 0;
+}
+```
+
+## waypoint_maker
+$\quad$此包负责对路点数据的处理。存在三个节点程序。
+
+### waypoint_loader
+
+> roslaunch waypoint\_maker waypoint\_loader.launch
+
+$\quad$此节点负责加载路点数据。
+
+### waypoint_saver
+
+### waypoint_clicker
+
 ## decision_maker
 
 ### decision_maker
 
 ### planner_selector
+
+> roslaunch decision\_maker planner\_selector
+
+$\quad$此节点负责融合_dp_与_astar_算法并发布最后的路点路径以及最接近的路点，此节点订阅了两个规划算法_dp_与_astar_的
+消息。通过消息`/enableLattice`进行控制，当`enableLattice`消息为`false`时使用_astar_反之使用_dp_。
+
+#### 配置信息 config/waypoint_follower
+
+此节点主要通过以下配置将两个算法_dp_与_astar_进行算法融合。
+
+* `latency_num`, 在当切换_astar_与_dp_算法时，对已经经过的路点进行限制。
+* `waypoints_num`, 当使用_astar_算法时，指明已经经过路点的数量。
+* `convergence_num`, 收敛数量，暂时无用。
+
+#### 订阅的_topic_列表
+
+|名称|说明|
+|---|----|
+|`/dp/final_waypoints`|_dp_路径规划器发布的路点|
+|`/dp/closest_waypoint`|_dp_路径规划器发布的最近路点|
+|`/astar/final_waypoints`|_astar_路径规划器发布的路点|
+|`/astar/closest_waypoint`|_astar_路径规划器发布的最近路点|
+|`/enableLattice`||
+|`/config/planner_selector`|当前节点的配置信息|
+|`/current_velocity`|当前的速度|
+
+#### 发布的_topic_列表
+|`/final_waypoints`|最终路点|
+|`/closest_waypoint`|最近路点|
 
 ## waypoint_follower
 $\quad$在此包中存在四个节点。其中**twist\_gate**与**twist\_filter**两个节点是一同使用的。通过_launch_进行一起进行启动。
@@ -81,7 +155,7 @@ $\quad$这个节点会定于订阅车辆状态的所有信息，接到一个话�
 |`/lamp_cmd`|车灯信息|
 |`/ctrl_cmd`|控制命令|
 
-#### 发布的_topicn_列表
+#### 发布的_topic_列表
 
 |名称|说明|
 |---|----|
