@@ -31,10 +31,9 @@
 static const int SYNC_FRAMES = 50;
 
 typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::TwistStamped, geometry_msgs::PoseStamped>
-    TwistPoseSync;
+  TwistPoseSync;
 
-class WaypointSaver
-{
+class WaypointSaver {
 public:
   WaypointSaver();
   ~WaypointSaver();
@@ -66,8 +65,7 @@ private:
   std::string filename_, pose_topic_, velocity_topic_;
 };
 
-WaypointSaver::WaypointSaver() : private_nh_("~")
-{
+WaypointSaver::WaypointSaver() : private_nh_("~") {
   // parameter settings
   private_nh_.param<std::string>("save_filename", filename_, std::string("data.txt"));
   private_nh_.param<std::string>("pose_topic", pose_topic_, std::string("current_pose"));
@@ -185,8 +183,7 @@ void WaypointSaver::displayMarker(geometry_msgs::Pose pose, double velocity) con
   id++;
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   ros::init(argc, argv, "waypoint_saver");
   WaypointSaver ws;
   ros::spin();
